@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Task Tracker</title>
+<style>
+    /* Basic styling */
+    body {
+        font-family: Arial, sans-serif;
+       background: rgb(39,39,41);
+background: linear-gradient(90deg, rgba(39,39,41,1) 0%, rgba(70,222,157,1) 54%, rgba(0,212,255,1) 100%);
+user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+    }
+    .container {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 20px;
+
+
+    }
+    .column {
+        width: 30%;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 10px;
+
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    th, td {
+        padding: 8px;
+        text-align: left;
+        border: 1px solid black; /* Border for table cells */
+    }
+    th {
+        background-color: #f2f2f2;
+    }
+    .icon {
+        cursor: pointer;
+        margin-right: 8px; /* Add margin between icons */
+    }
+    .input-area {
+        text-align: center;
+        margin: 20px 0;
+    }
+    #taskInput {
+    width: 800px;
+    padding: 20px;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+    border-radius: 50px;
+    border: 2px solid black;
+}
+
+    .task-cell {
+        max-width: 160px;
+        word-wrap: break-word;
+    }
+    /* Text color and bold styling */
+    .todo-task {
+        color: red;
+        font-weight: bold;
+        font-size: 0.8em; /* Increase text size */
+    }
+    .in-progress-task {
+        color: #8B8000  ;
+        font-weight: bold;
+        font-size: 0.8em; /* Increase text size */
+    }
+    .completed-task {
+        color: #355E3B  ;
+        font-weight: bold;
+        font-size: 0.8em; /* Increase text size */
+    }
+     #todo {
+        background-color: #ffe6e6; /* Red */
+    }
+    #inProgress {
+        background-color: #FFFFE0; /* Yellow */
+    }
+    #completed {
+        background-color: #AFE1AF   ; /* Green */
+    }
+    /* Modal Popup Styles */
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.4); /* Black background with opacity */
+}
+.modal-content {
+  background-color: #fefefe;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 50%;
+}
+ 
+
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+</head>
+
+<body>
+<!-- Modal Popup -->
+<div id="pinModal" class="modal">
+  <div class="modal-content">
+    <h2>Enter Pin to Access</h2>
+    <form id="pinForm">
+      <input type="password" id="pinInput" maxlength="9" placeholder="Enter PIN" required>
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+</div>
+
+
+<h1 style="text-align: center; color: black; ">My Tasks Tracker - Optus</h1>
+<br>
+
+<form onsubmit="validateAndAddTask(); return false;">
+    <div class="input-area">
+        <input type="text" id="taskInput" placeholder="Enter task" style="font-weight: bold;" required autocomplete="off">
+
+        <button type="submit" class="btn" style="width: 150px; height: 60px; font-weight: bold; padding: 20px; box-sizing: border-box; margin-bottom: 10px; border-radius: 50px; border: 2px solid black; cursor: pointer;">Add Task</button>
+    </div>
+</form>
+
+</div>
+
+<div class="container">
+    <div class="column" id="todo">
+        <h3>To Do</h3>
+        <table id="todoTable">
+            <thead>
+                <tr>
+                    <th>Task</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Tasks will be added here -->
+            </tbody>
+        </table>
+    </div>
+    <div class="column" id="inProgress">
+        <h3>In Progress</h3>
+        <table id="inProgressTable">
+            <thead>
+                <tr>
+                    <th>Task</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- In-progress tasks will be added here -->
+            </tbody>
+        </table>
+    </div>
+    <div class="column" id="completed">
+        <h3>Completed</h3>
+        <table id="completedTable">
+            <thead>
+                <tr>
+                    <th>Task</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Completed tasks will be added here -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Get the modal
+var modal = document.getElementById("pinModal");
+
+// When the page loads, show the modal
+window.onload = function() {
+  modal.style.display = "block";
+}
+
+// Handle PIN submission
+document.getElementById("pinForm").addEventListener("submit", function(event) {
+  event.preventDefault();
+  var pinInput = document.getElementById("pinInput").value;
+  if (pinInput === "190031124") {
+    modal.style.display = "none"; // Close modal
+    // Allow access to the task tracker
+    // You can write the code here to show the task tracker elements
+  } else {
+    alert("Incorrect PIN. Please try again.");
+    // Clear PIN input field
+    document.getElementById("pinInput").value = "";
+  }
+});
+
+    let editRowIndex = -1; // Global variable to track the row being edited
+
+    document.addEventListener("DOMContentLoaded", function() {
+        loadTasks();
+    });
+
+    function addOrSaveTask() {
+        var taskInput = document.getElementById("taskInput");
+        var task = taskInput.value.trim();
+        if (task !== "") {
+            var date = formatDate(new Date());
+            var table = document.getElementById("todoTable").getElementsByTagName('tbody')[0];
+            if (editRowIndex !== -1) {
+                var row = table.rows[editRowIndex];
+                row.cells[0].innerText = task;
+                row.cells[1].innerText = date;
+                editRowIndex = -1;
+                document.getElementById("taskInput").value = "";
+                document.querySelector(".input-area button").innerText = "Add Task";
+            } else {
+                var row = table.insertRow();
+                var taskCell = row.insertCell(0);
+                taskCell.className = "task-cell todo-task";
+                taskCell.innerText = task;
+                row.insertCell(1).innerText = date;
+                row.insertCell(2).innerHTML = "<i class='fas fa-edit icon' onclick='editTask(this)'></i> <i class='fas fa-trash-alt icon' onclick='deleteTask(this)'></i> <i class='fas fa-play icon' onclick='startTask(this)'></i>";
+                taskInput.value = "";
+            }
+            saveTasks();
+        }
+    }
+
+    function editTask(icon) {
+        var taskCell = icon.parentNode.parentNode.cells[0];
+        var taskText = taskCell.innerText;
+        document.getElementById("taskInput").value = taskText;
+        editRowIndex = icon.parentNode.parentNode.rowIndex - 1; // Adjust for header row
+        document.querySelector(".input-area button").innerText = "Save";
+    }
+
+    function deleteTask(icon) {
+        var row = icon.parentNode.parentNode;
+        row.parentNode.removeChild(row);
+        saveTasks();
+    }
+
+    function startTask(icon) {
+        var row = icon.parentNode.parentNode;
+        var task = row.cells[0].innerText;
+        var date = formatDate(new Date());
+        row.parentNode.removeChild(row);
+        var table = document.getElementById("inProgressTable").getElementsByTagName('tbody')[0];
+        var newRow = table.insertRow();
+        var taskCell = newRow.insertCell(0);
+        taskCell.className = "task-cell in-progress-task";
+        taskCell.innerText = task;
+        newRow.insertCell(1).innerHTML = date;
+        newRow.insertCell(2).innerHTML = "<i class='fas fa-check icon' onclick='completeTask(this)'></i> <i class='fas fa-undo icon' onclick='reopenToDoTask(this)'></i>";
+        saveTasks();
+    }
+
+    function completeTask(icon) {
+        var row = icon.parentNode.parentNode;
+        var task = row.cells[0].innerText;
+        var date = formatDate(new Date());
+        row.parentNode.removeChild(row);
+        var table = document.getElementById("completedTable").getElementsByTagName('tbody')[0];
+        var newRow = table.insertRow();
+        var taskCell = newRow.insertCell(0);
+        taskCell.className = "task-cell completed-task";
+        taskCell.innerText = task;
+        newRow.insertCell(1).innerHTML = date;
+        newRow.insertCell(2).innerHTML = "<i class='fas fa-undo icon' onclick='reopenTask(this)'></i>";
+        saveTasks();
+    }
+
+    function reopenTask(icon) {
+        var row = icon.parentNode.parentNode;
+        var task = row.cells[0].innerText;
+        var date = formatDate(new Date());
+        row.parentNode.removeChild(row);
+        var table = document.getElementById("inProgressTable").getElementsByTagName('tbody')[0];
+        var newRow = table.insertRow();
+        var taskCell = newRow.insertCell(0);
+        taskCell.className = "task-cell in-progress-task";
+        taskCell.innerText = task;
+        newRow.insertCell(1).innerHTML = date;
+        newRow.insertCell(2).innerHTML = "<i class='fas fa-check icon' onclick='completeTask(this)'></i> <i class='fas fa-undo icon' onclick='reopenToDoTask(this)'></i>";
+        saveTasks();
+    }
+
+    function reopenToDoTask(icon) {
+        var row = icon.parentNode.parentNode;
+        var task = row.cells[0].innerText;
+        var date = formatDate(new Date());
+        row.parentNode.removeChild(row);
+        var table = document.getElementById("todoTable").getElementsByTagName('tbody')[0];
+        var newRow = table.insertRow();
+        var taskCell = newRow.insertCell(0);
+        taskCell.className = "task-cell todo-task";
+        taskCell.innerText = task;
+        newRow.insertCell(1).innerHTML = date;
+        newRow.insertCell(2).innerHTML = "<i class='fas fa-edit icon' onclick='editTask(this)'></i> <i class='fas fa-trash-alt icon' onclick='deleteTask(this)'></i> <i class='fas fa-play icon' onclick='startTask(this)'></i>";
+        saveTasks();
+    }
+
+    function formatDate(date) {
+        var day = date.getDate();
+        var month = date.getMonth() + 1;
+        var year = date.getFullYear();
+        return (day < 10 ? '0' : '') + day + '/' + (month < 10 ? '0' : '') + month + '/' + year;
+    }
+    function validateAndAddTask() {
+    var taskInput = document.getElementById("taskInput").value;
+    if (taskInput.trim() === "") {
+        alert("Please fill in the 'Add Task' field.");
+    } else {
+        addOrSaveTask(); // Call your existing function if validation passes
+    }
+}
+
+    function saveTasks() {
+        var tasks = {
+            todo: [],
+            inProgress: [],
+            completed: []
+        };
+
+        var todoTable = document.getElementById("todoTable").getElementsByTagName('tbody')[0];
+        for (var i = 0; i < todoTable.rows.length; i++) {
+            tasks.todo.push({
+                task: todoTable.rows[i].cells[0].innerText,
+                date: todoTable.rows[i].cells[1].innerText
+            });
+        }
+
+        var inProgressTable = document.getElementById("inProgressTable").getElementsByTagName('tbody')[0];
+        for (var i = 0; i < inProgressTable.rows.length; i++) {
+            tasks.inProgress.push({
+                task: inProgressTable.rows[i].cells[0].innerText,
+                date: inProgressTable.rows[i].cells[1].innerText
+            });
+        }
+
+        var completedTable = document.getElementById("completedTable").getElementsByTagName('tbody')[0];
+        for (var i = 0; i < completedTable.rows.length; i++) {
+            tasks.completed.push({
+                task: completedTable.rows[i].cells[0].innerText,
+                date: completedTable.rows[i].cells[1].innerText
+            });
+        }
+
+        localStorage.setItem("tasks", JSON.stringify(tasks));
+    }
+
+    function loadTasks() {
+        var tasks = JSON.parse(localStorage.getItem("tasks"));
+        if (tasks) {
+            var todoTable = document.getElementById("todoTable").getElementsByTagName('tbody')[0];
+            for (var i = 0; i < tasks.todo.length; i++) {
+                var row = todoTable.insertRow();
+                var taskCell = row.insertCell(0);
+                taskCell.className = "task-cell todo-task";
+                taskCell.innerText = tasks.todo[i].task;
+                row.insertCell(1).innerText = tasks.todo[i].date;
+                row.insertCell(2).innerHTML = "<i class='fas fa-edit icon' onclick='editTask(this)'></i> <i class='fas fa-trash-alt icon' onclick='deleteTask(this)'></i> <i class='fas fa-play icon' onclick='startTask(this)'></i>";
+            }
+            var inProgressTable = document.getElementById("inProgressTable").getElementsByTagName('tbody')[0];
+            for (var i = 0; i < tasks.inProgress.length; i++) {
+                var row = inProgressTable.insertRow();
+                var taskCell = row.insertCell(0);
+                taskCell.className = "task-cell in-progress-task";
+                taskCell.innerText = tasks.inProgress[i].task;
+                row.insertCell(1).innerText = tasks.inProgress[i].date;
+                row.insertCell(2).innerHTML = "<i class='fas fa-check icon' onclick='completeTask(this)'></i> <i class='fas fa-undo icon' onclick='reopenToDoTask(this)'></i>";
+            }
+            var completedTable = document.getElementById("completedTable").getElementsByTagName('tbody')[0];
+            for (var i = 0; i < tasks.completed.length; i++) {
+                var row = completedTable.insertRow();
+                var taskCell = row.insertCell(0);
+                taskCell.className = "task-cell completed-task";
+                taskCell.innerText = tasks.completed[i].task;
+                row.insertCell(1).innerText = tasks.completed[i].date;
+                row.insertCell(2).innerHTML = "<i class='fas fa-undo icon' onclick='reopenTask(this)'></i>";
+            }
+        }
+    }
+    function validateAndAddTask() {
+    var taskInput = document.getElementById("taskInput").value;
+    if (taskInput.trim() === "") {
+        alert("Please fill the tasks to add.");
+    } else {
+        addOrSaveTask(); // Call your existing function if validation passes
+    }
+}
+function editTask(icon) {
+    var taskCell = icon.parentNode.parentNode.cells[0];
+    var taskText = taskCell.innerText;
+    document.getElementById("taskInput").value = taskText;
+    editRowIndex = icon.parentNode.parentNode.rowIndex - 1; // Adjust for header row
+    document.querySelector(".input-area button").innerText = "Save";
+    // Scroll to the top of the page
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+// Disable shortcut keys
+    window.addEventListener('keydown', function(e) {
+        // Disable Ctrl + Shift + I, Ctrl + Shift + J, and F12
+        if ((e.ctrlKey && e.shiftKey && e.keyCode === 73) ||  // Ctrl + Shift + I
+            (e.ctrlKey && e.shiftKey && e.keyCode === 74) ||  // Ctrl + Shift + J
+            (e.keyCode === 123)) {                            // F12
+            e.preventDefault();
+        }
+    });
+
+    // Disable right-click menu
+    window.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+    });
+
+</script>
+
+</body>
+</html>
